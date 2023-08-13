@@ -184,9 +184,9 @@ async function readIndexFile<H, S extends string>(
     fileAccess: IMhcmsFileAccess
 ): Promise<Result<IMhcmsFolderIndex<H, S>, string>> {
     try {
-        const indexFile = await fileAccess.readTextFile(path);
-        if (!indexFile) { return ng("Unable to read index file.") }
-        return parseIndexFile(indexFile, collections, headersCodec);
+        const _indexFile = await fileAccess.readTextFile(path);
+        if (_indexFile.isNg()) { return ng("Unable to read index file.", _indexFile) }
+        return parseIndexFile(_indexFile.value, collections, headersCodec);
     } catch (e) {
         return ng("Unable to access index file.");
     }
@@ -216,19 +216,19 @@ async function listFileEntriesInSection<H, S extends string>(
     for (let fileEntry of fileEntries) {
         const _parsedName = parsePostFileName(fileEntry.name);
         if (_parsedName.isNg()) {
-            console.error(`Skipping file ${fileEntry.name}: ${_parsedName.pretty()}`);
+            console.warn(`Skipping file ${fileEntry.name}: ${_parsedName.pretty()}`);
             continue;
         }
         const parsedName = _parsedName.value;
 
-        const fileContent = await fileAccess.readTextFile(fileEntry.path);
-        if (!fileContent) {
-            console.error(`Cannot access file: ${fileEntry.name}. Will skip it.`);
+        const _fileContent = await fileAccess.readTextFile(fileEntry.path);
+        if (_fileContent.isNg()) {
+            console.warn(`Cannot access file: ${fileEntry.name}. Will skip it.`);
             continue;
         }
 
         const _post = parseArticle(
-            fileContent, parsedName.date, parsedName.shortTitle, fileEntry.path, headersCodec);
+            _fileContent.value, parsedName.date, parsedName.shortTitle, fileEntry.path, headersCodec);
 
         if (_post.isNg()) {
             console.error(`Skipping file ${fileEntry.name}: ${_post.pretty()}`);

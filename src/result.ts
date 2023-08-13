@@ -2,8 +2,8 @@ export function ok<V>(value: V) {
     return new OkResult<V>(value);
 }
 
-export function ng<V, E>(error: E, fromError?: NgResult<E>) {
-    return new NgResult<E>(error, fromError);
+export function ng<V, E>(error: E, fromError?: NgResult<E>, exception?: any) {
+    return new NgResult<E>(error, fromError, exception);
 }
 
 class OkResult<V> {
@@ -14,7 +14,7 @@ class OkResult<V> {
 }
 
 class NgResult<E> {
-    constructor(public error: E, public fromError?: NgResult<E>) { }
+    constructor(public error: E, public fromError?: NgResult<E>, public exception?: any) { }
 
     isOk(): this is OkResult<any> { return false; }
     isNg(): this is NgResult<E> { return true; }

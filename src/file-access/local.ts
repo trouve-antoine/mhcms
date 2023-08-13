@@ -1,6 +1,7 @@
 import path from "path";
 import { promises as fs } from "fs";
 import { IFileEntry, IMhcmsFileAccess } from "./types";
+import { ng, ok } from "../result";
 
 export default class LocalFileAccess implements IMhcmsFileAccess {
     constructor(private root: string) {
@@ -41,9 +42,9 @@ export default class LocalFileAccess implements IMhcmsFileAccess {
         try {
             const filePath = path.join(this.root, file);
             const contents = await fs.readFile(filePath, { encoding: 'utf-8' });
-            return contents;
+            return ok(contents);
         } catch(err) {
-            return null;
+            return ng("Unable to read file: " + file + ".", undefined, err);
         }
     }
 
