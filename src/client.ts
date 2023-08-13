@@ -4,7 +4,7 @@ import yaml from "yaml";
 import { IListFileOptions, IMhcmsFileAccess } from "./file-access/types";
 import { IMhcmsFolderIndex, IMhcmsArticleHeaders, parseIndexFile } from "./folder-index";
 import { Result, ok, ng } from "./result";
-import { parseArticle } from "./articles";
+import { getArticleContents, parseArticle } from "./articles";
 
 type IndexMode = "off" | "forced" | "auto"
 
@@ -97,7 +97,7 @@ class MhcmsFolder<H, S extends string | symbol> {
         return Object.keys(this.index.collections) as S[];
     }
 
-    async posts(options: IPostSearchOptions<S>): Promise<IMhcmsArticleHeaders<H>[]> {
+    async list(options: IPostSearchOptions<S>): Promise<IMhcmsArticleHeaders<H>[]> {
         const res: IMhcmsArticleHeaders<H>[] = [];
         for (const section of options.collections) {
             const posts = this.index.collections[section];
@@ -120,15 +120,28 @@ class MhcmsFolder<H, S extends string | symbol> {
             res.push(...posts);
         }
         if (options.sorting) {
+            const sortingOptions = options.sorting;
             res.sort((a, b) => {
-                if (options.sorting.direction === "ascending") {
-                    return a[options.sorting.key] > b[options.sorting.key] ? 1 : -1;
+                if (sortingOptions.direction === "ascending") {
+                    return a[sortingOptions.key] > b[sortingOptions.key] ? 1 : -1;
                 } else {
-                    return a[options.sorting.key] < b[options.sorting.key] ? 1 : -1;
+                    return a[sortingOptions.key] < b[sortingOptions.key] ? 1 : -1;
                 }
             });
         }
         return res.splice(options.offset || 0, options.limit || res.length);
+    }
+
+    async article(article: IMhcmsArticleHeaders<H>) {
+        const _contents = await this.fileAccess.readTextFile(article.path);
+        if (_contents.isNg()) { return ng("Unable to access contents of text file", _contents); }
+        const contents = _contents.value;
+        
+        const res = getArticleContents(contents);
+        if (!res) {
+            return ng("Got no article contents from file: " + article.path);
+        }
+        return ok(res);
     }
 }
 
@@ -140,7 +153,7 @@ export interface IPostSearchOptions<S> {
     limit?: number;
     tags?: string[];
     authors?: string[];
-    sorting: { key: "date", direction: "ascending" | "descending" };
+    sorting?: { key: "date", direction: "ascending" | "descending" };
 }
 
 function arrayHasAllEntries<T>(entries: T[], a: T[]) {

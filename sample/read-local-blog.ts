@@ -16,6 +16,19 @@ async function main() {
         console.error(_folder.pretty());
         return;
     }
+    const folder = _folder.value;
+
+    const articles = await folder.list({ collections: ["published"] });
+    const _article = await folder.article(articles[0]);
+    if (_article.isNg()) {
+        console.error("Failed to read the article.");
+        return;
+    }
+    const article = _article.value;
+
+    const sections = [...article.sections()];
+
+    console.log(sections);
 }
 
 main();

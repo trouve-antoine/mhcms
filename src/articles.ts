@@ -120,6 +120,13 @@ function makeArticleEntryFromHeadersRawKeyValue<H>(
     });
 }
 
+export function getArticleContents(content: string) {
+    const _lines = separateHeadersAndContentLines(content);
+    if (_lines === null) { return null; }
+
+    return new MhcmsArticleContent(_lines[1]);
+}
+
 function separateHeadersAndContentLines(content: string) {
     const lines = content.split("\n");
 
