@@ -26,9 +26,23 @@ async function main() {
     }
     const article = _article.value;
 
-    const sections = [...article.sections()];
-
-    console.log(sections);
+    for (const section of article.sections()) {
+        if (!["The Content", "Read-Only Features"].includes(section.name || "")) {
+            continue;
+        }
+        console.log("Found section: " + section.name + ".")
+        for (const p of section.content.paragraphs()) {
+            if (p.type === "text") {
+                console.log("Text paragraph. Starts with " + p.content.slice(0, 10) + "...");
+            } else if (p.type === "empty") {
+                console.log("Empty paragraph.");
+            } else if (p.type === "code-block") {
+                console.log("Code block paragraph.");
+            } else {
+                console.log("Found object paragraph: " + JSON.stringify(p.content) + ".");
+            }
+        }
+    }
 }
 
 main();

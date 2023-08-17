@@ -65,3 +65,6 @@ At the root (e.g. the `./blog` folder in the example above), MHCMS will create a
 file with name `index.yaml`. It contains the list of paths together with their header data.
 It is human-readable, but it is usually a bad idea to edit it by hand.
 If you delete this file, you will need to re-generate it for the system to work.
+
+## TODO
+

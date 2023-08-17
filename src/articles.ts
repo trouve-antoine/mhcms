@@ -1,3 +1,4 @@
+import yaml from "yaml";
 import { isLeft } from "fp-ts/lib/Either";
 import * as t from "io-ts";
 import { ok, ng, Result } from "./result";
@@ -8,10 +9,48 @@ export interface IMhcmsArticle<H> {
     contents: MhcmsArticleContent;
 }
 
-export interface IMhcmsArticleSection {
-    name?: string;
-    content: MhcmsArticleContent;
+export class MhcmsArticleSection {
+    constructor(
+        readonly heading: string | undefined,
+        readonly content: MhcmsArticleContent
+    ) { /** */ }
+
+    get name(): string | undefined {
+        if (this.heading === undefined) { return undefined; }
+        return removeSharpPrefix(this.heading);
+    }
 }
+
+export interface IMhcmsEmptyArticleParagraph {
+    readonly type: "empty"
+}
+
+export interface IMhcmsTextArticleParagraph {
+    readonly type: "text"
+    readonly content: string;
+}
+
+export interface IMhcmsCodeBlockArticleParagraph {
+    readonly type: "code-block"
+    readonly language: string | null;
+    readonly content: string;
+}
+
+export class MhcmsObjectArticleParagraph {
+    readonly type = "object" as const
+    
+    constructor(readonly content: object) { /** */ }
+
+    parse<T>(codec: t.Type<T>): Result<T, string> {
+        const _res = codec.decode(this.content);
+        if (isLeft(_res)) {
+            return ng("Unable to parse object", undefined, _res.left);
+        }
+        return ok(_res.right);
+    }
+}
+
+export type IMhcmsArticleParagraph = IMhcmsEmptyArticleParagraph | IMhcmsTextArticleParagraph | MhcmsObjectArticleParagraph | IMhcmsCodeBlockArticleParagraph;
 
 export class MhcmsArticleContent {
     constructor(private lines: string[], private sectionLevel: number = 0) { /** */ }
@@ -20,13 +59,13 @@ export class MhcmsArticleContent {
         return this.lines.join("\n");
     }
 
-    *sections() {
+    *sections(): Generator<MhcmsArticleSection> {
         const sectionStart = "#".repeat(this.sectionLevel + 1);
         const sectionStartRegex = new RegExp(`^${sectionStart}\s*(.*)\s*$`);
 
         let inCodeBlock = false;
         
-        let currentSectionInfos: { name?: string, lines: string[] } = { lines: [] };
+        let currentSectionInfos: { headingLine?: string, lines: string[] } = { lines: [] };
         for (let line of this.lines) {
             if (line.startsWith("```")) {
                 inCodeBlock = !inCodeBlock;
@@ -38,22 +77,78 @@ export class MhcmsArticleContent {
 
             const match = line.match(sectionStartRegex);
             if (match !== null) {
-                yield {
-                    name: currentSectionInfos.name,
-                    content: new MhcmsArticleContent(currentSectionInfos.lines, this.sectionLevel + 1)
-                }
-                currentSectionInfos = { name: match[1], lines: [] };
+                yield new MhcmsArticleSection(
+                    currentSectionInfos.headingLine,
+                    new MhcmsArticleContent(currentSectionInfos.lines, this.sectionLevel + 1)
+                )
+                currentSectionInfos = { headingLine: match[1], lines: [] };
             } else {
                 currentSectionInfos.lines.push(line);
             }
         }
         if (currentSectionInfos.lines.length > 0) {
-            yield {
-                name: currentSectionInfos.name,
-                content: new MhcmsArticleContent(currentSectionInfos.lines, this.sectionLevel + 1)
-            }
+            yield new MhcmsArticleSection(
+                currentSectionInfos.headingLine,
+                new MhcmsArticleContent(currentSectionInfos.lines, this.sectionLevel + 1)
+            )
         }
     }
+
+    *paragraphs() {
+        let currentParagraph: string[] = [];
+        let isCodeBlockParagraph = false;
+        for (let line of this.lines) {
+            if (line.trim() === "") {
+                if (isCodeBlockParagraph) {
+                    currentParagraph.push(line);
+                } else if (currentParagraph.length > 0) {
+                    yield postProcessParagraphLines(currentParagraph);
+                    currentParagraph = [];
+                }
+            } else if (line.trim().startsWith("```")) {
+                currentParagraph.push(line);
+                if (isCodeBlockParagraph) {
+                    yield postProcessParagraphLines(currentParagraph);
+                    currentParagraph = [];
+                }
+                isCodeBlockParagraph = !isCodeBlockParagraph;
+            } else {
+                currentParagraph.push(line);
+            }
+        }
+        if (currentParagraph.length > 0) {
+            yield postProcessParagraphLines(currentParagraph);
+        }
+    }
+}
+
+function removeSharpPrefix(line: string) {
+    return line.replace(/^#+\s*/, "").trim();
+}
+
+function postProcessParagraphLines(lines: string[]): IMhcmsArticleParagraph {
+    if (lines.length === 0) {
+        return { type: "empty" };
+    }
+    if (lines[0].startsWith("```mhcms-yaml")) {
+        const stringContent = lines.slice(1, lines.length-1).join("\n");
+        const objectContent = yaml.parse(stringContent);
+        return new MhcmsObjectArticleParagraph(objectContent);
+    }
+    if (lines[0].startsWith("```mhcms-json")) {
+        const stringContent = lines.slice(1, lines.length-1).join("\n");
+        const objectContent = JSON.parse(stringContent);
+        return new MhcmsObjectArticleParagraph(objectContent);
+    }
+    if (lines[0].startsWith("```")) {
+        return {
+            type: "code-block",
+            language: lines[0].slice(3).trim() || null,
+            content: lines.slice(1, lines.length-1).join("\n")
+        }
+    }
+    
+    return { type: "text", content: lines.join("\n") };
 }
 
 export function parseArticle<H>(
