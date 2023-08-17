@@ -1,4 +1,4 @@
-import path from "path";
+import * as path from "path";
 import { ok, ng, Result } from "../result";
 
 import * as S3 from "@aws-sdk/client-s3";

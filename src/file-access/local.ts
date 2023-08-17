@@ -1,4 +1,4 @@
-import path from "path";
+import * as path from "path";
 import { promises as fs } from "fs";
 import { IFileEntry, IMhcmsFileAccess } from "./types";
 import { ng, ok } from "../result";

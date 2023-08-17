@@ -1,11 +1,17 @@
 {
   "name": "mhcms",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Minimal Headless Content Management System",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "files": [ "dist" ],
+  "exports": {
+    ".": {
+      "import": "./dist",
+      "require": "./dist"
+    }
+  },
   "scripts": {
     "prepare": "npm run build",
     "build": "tsup",
