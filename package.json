@@ -2,8 +2,13 @@
   "name": "mhcms",
   "version": "0.1.0",
   "description": "Minimal Headless Content Management System",
-  "main": "src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [ "dist" ],
   "scripts": {
+    "prepare": "npm run build",
+    "build": "tsup",
     "test": "npm test"
   },
   "repository": {
@@ -20,7 +25,9 @@
   },
   "homepage": "https://github.com/trouve-antoine/mhcms#readme",
   "devDependencies": {
-    "@types/node": "^20.4.9"
+    "@types/node": "^20.4.9",
+    "tsup": "^7.2.0",
+    "typescript": "^5.1.6"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.388.0",

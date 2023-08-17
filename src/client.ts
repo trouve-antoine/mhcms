@@ -1,6 +1,6 @@
-import path from "path";
+import * as path from "path";
 import * as t from "io-ts";
-import yaml from "yaml";
+import * as yaml from "yaml";
 import { IListFileOptions, IMhcmsFileAccess } from "./file-access/types";
 import { IMhcmsFolderIndex, IMhcmsArticleHeaders, parseIndexFile } from "./folder-index";
 import { Result, ok, ng } from "./result";

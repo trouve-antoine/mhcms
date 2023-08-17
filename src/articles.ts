@@ -1,4 +1,4 @@
-import yaml from "yaml";
+import * as yaml from "yaml";
 import { isLeft } from "fp-ts/lib/Either";
 import * as t from "io-ts";
 import { ok, ng, Result } from "./result";
