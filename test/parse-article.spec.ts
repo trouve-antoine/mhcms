@@ -124,4 +124,20 @@ describe("Parse paragraph", () => {
         expect(p.options).hasOwnProperty("@parse");
         expect(p.content).to.equal("{ \"a\": 1 }");
     })
+    it("Parse quote without author", () => {
+        const p = postProcessParagraphLines(["> What makes you think she is a witch?", "> She turned me into a newt."]);
+        if (p.type !== "quote") {
+            return expect.fail("type should be quote");
+        }
+        expect(p).not.hasOwnProperty("author");
+        expect(p.content).to.equal("What makes you think she is a witch?\nShe turned me into a newt.");
+    })
+    it("Parse quote with author", () => {
+        const p = postProcessParagraphLines(["> What makes you think she is a witch?", "> She turned me into a newt.", "> - Monthy Python"]);
+        if (p.type !== "quote") {
+            return expect.fail("type should be quote");
+        }
+        expect(p.author).to.equal("Monthy Python");
+        expect(p.content).to.equal("What makes you think she is a witch?\nShe turned me into a newt.");
+    })
 });

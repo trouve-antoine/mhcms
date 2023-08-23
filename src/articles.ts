@@ -35,6 +35,12 @@ export interface IMhcmsTextArticleParagraph {
     readonly content: string;
 }
 
+export interface IMhcmsQuoteArticleParagraph {
+    readonly type: "quote"
+    readonly content: string;
+    readonly author?: string;
+}
+
 export interface IMhcmsCodeBlockArticleParagraph {
     readonly type: "code-block"
     readonly language?: string;
@@ -48,7 +54,7 @@ export interface IMhcmsObjectArticleParagraph {
     readonly options?: Record<string, string | boolean | number>;
 }
 
-export type IMhcmsArticleParagraph = IMhcmsEmptyArticleParagraph | IMhcmsTextArticleParagraph | IMhcmsObjectArticleParagraph | IMhcmsCodeBlockArticleParagraph;
+export type IMhcmsArticleParagraph = IMhcmsEmptyArticleParagraph | IMhcmsTextArticleParagraph | IMhcmsObjectArticleParagraph | IMhcmsCodeBlockArticleParagraph | IMhcmsQuoteArticleParagraph;
 
 export class MhcmsArticleContent {
     constructor(private lines: string[], private sectionLevel: number = 0) { /** */ }
@@ -156,6 +162,23 @@ export function postProcessParagraphLines(
             }
         }
         return codeBlock;
+    }
+
+    const isQuoteBlock = lines.every(l => l.startsWith(">"));
+    if (isQuoteBlock) {
+        const author = lines[lines.length - 1].match(/^>\s*-+\s*(?<author>.+)\s*$/)?.groups?.author;
+        
+        if (author) {
+            return {
+                type: "quote",
+                content: lines.slice(0, lines.length - 1).map(l => l.slice(1).trim()).join("\n"),
+                author
+            }
+        }
+        return {
+            type: "quote",
+            content: lines.map(l => l.slice(1).trim()).join("\n")
+        }
     }
     
     return { type: "text", content: lines.join("\n") };
