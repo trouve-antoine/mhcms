@@ -67,5 +67,3 @@ It is human-readable, but it is usually a bad idea to edit it by hand.
 If you delete this file, you will need to re-generate it for the system to work.
 
 ## TODO
-
-- quote line support

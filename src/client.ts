@@ -16,33 +16,41 @@ export default class MhcmsClient {
     public async folder<H, S extends string>(
         folderPath: string,
         collections: S[],
-        headersCodec: t.Type<H>,
-        indexMode: IndexMode = "auto"
+        headersCodec: t.Type<H>
     ): Promise<Result<MhcmsFolder<H, S>, string>> {
-        const _index = await this.indexFolder<H, S>(folderPath, headersCodec, collections, indexMode);
+        const _index = await this.readIndex(folderPath, headersCodec, collections);
         if (_index.isNg()) { return _index; }
         const index = _index.value;
 
         return ok(new MhcmsFolder<H, S>(folderPath, index, this.fileAccess));
     }
 
-    private async indexFolder<H, S extends string>(
+    public async indexFolder<H, S extends string>(
         folder: string,
         headersCodec: t.Type<H>,
         collections: S[],
-        indexMode: IndexMode
+        force: boolean = false,
     ): Promise<Result<IMhcmsFolderIndex<H, S>, string>> {
         const indexFilePath = path.join(folder, "index.yaml");
         const _currentIndex = await readIndexFile<H, S>(indexFilePath, headersCodec, collections, this.fileAccess);
-        
+
         const currentIndex = _currentIndex.isNg() ? null : _currentIndex.value;
 
         const _newIndex = await this.generateOrUpdateIndex<H, S>(
-            folder, headersCodec, collections, currentIndex, indexMode);
+            folder, headersCodec, collections, currentIndex, force ? "forced" : "auto");
         if (_newIndex.isNg()) { return _newIndex; }
         const newIndex = _newIndex.value;
 
         return await writeYamlIndexFile(indexFilePath, newIndex, this.fileAccess);
+    }
+
+    private async readIndex<H, S extends string>(
+        folder: string,
+        headersCodec: t.Type<H>,
+        collections: S[]
+    ): Promise<Result<IMhcmsFolderIndex<H, S>, string>> {
+        const indexFilePath = path.join(folder, "index.yaml");
+        return await readIndexFile<H, S>(indexFilePath, headersCodec, collections, this.fileAccess);
     }
 
     private async generateOrUpdateIndex<H, S extends string>(
@@ -90,6 +98,9 @@ class MhcmsFolder<H, S extends string | symbol> {
         private fileAccess: IMhcmsFileAccess)
     {
         /** */
+    }
+
+    async updateIndex(force: boolean = false): Promise<void> {
     }
 
     async sections(): Promise<S[]> {

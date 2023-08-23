@@ -10,7 +10,7 @@ async function main() {
     const fileAccess = new LocalFileAccess(SAMPLE_FOLDER_PATH);
     const client = new MhcmsClient(fileAccess);
 
-    const _folder = await client.folder("blog", [ "drafts", "published" ], t.record(t.string, t.string), "forced");
+    const _folder = await client.folder("blog", [ "drafts", "published" ], t.record(t.string, t.string));
     if (_folder.isNg()) {
         console.error("Failed to index the folder.");
         console.error(_folder.pretty());
