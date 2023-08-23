@@ -66,4 +66,30 @@ file with name `index.yaml`. It contains the list of paths together with their h
 It is human-readable, but it is usually a bad idea to edit it by hand.
 If you delete this file, you will need to re-generate it for the system to work.
 
+## Client Sample Code
+
+For a simple blog with `drafts` and `published` folders, you can list posts with:
+
+```
+import { MhcmsClient, LocalFileAccess } from 'mhcms';
+
+const CMS_ROOT = "/some/folder"
+
+const _mhcms = await MhcmsClient.simpleBlog(new LocalFileAccess(CMS_ROOT)).folder("blog");
+if (_mhcms.isNg()) {
+  console.log("Unable to open blog: " + _mhcms.pretty());
+  return;
+}
+const mhcms = _mhcms.value;
+
+const publishedArticles = mhcms.articles("published");
+
+for (let article of publishedArticles) {
+  console.log(article.title);
+}
+```
+
 ## TODO
+
+- specify a callback for image or links
+  (not sure how that would work)

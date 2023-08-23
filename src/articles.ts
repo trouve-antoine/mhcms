@@ -148,7 +148,7 @@ export function postProcessParagraphLines(
     const isCodeBlock = lines[0].startsWith("```") && lines[lines.length-1].startsWith("```");
     if (isCodeBlock) {
         const codeBlock = parseCodeBlockParagraph(lines);
-        if (codeBlock.options?.["@parse"]) {
+        if (codeBlock.options?.["@parse"] && codeBlock.language) {
             const objectContent = objectParsers.hasOwnProperty(codeBlock.language) ?
                 objectParsers[codeBlock.language](codeBlock.content) : null
             
@@ -358,5 +358,7 @@ function splitAroundSpaces(s: string) {
     // Handles single and double quotes
     // e.g. toto="yes man" tata="yes mam"
     // return [...s.match(/[\w-]+="[^"]*"|[\w-]+='[^']*|[\w-]+=[^\s]+|![\w-]+|[\w-]+'/g)]
-    return [...s.match(/[\w-]+="[^"]*"|[\w-]+='[^']*'|[\w-]+=[^\s]+|(!|@)[\w-]+|\w+/g)]
+    const m = s.match(/[\w-]+="[^"]*"|[\w-]+='[^']*'|[\w-]+=[^\s]+|(!|@)[\w-]+|\w+/g)
+    if (!m) { return []; }
+    return [...m];
 }

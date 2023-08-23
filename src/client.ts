@@ -8,55 +8,47 @@ import { getArticleContents, parseArticle } from "./articles";
 
 type IndexMode = "off" | "forced" | "auto"
 
-export default class MhcmsClient {
-    constructor(private fileAccess: IMhcmsFileAccess) {
+export class MhcmsClient<H, S extends string> {
+    constructor(
+        private fileAccess: IMhcmsFileAccess,
+        readonly collections: S[],
+        readonly headersCodec: t.Type<H>
+    ) {
         /** */
     }
 
-    public async folder<H, S extends string>(
-        folderPath: string,
-        collections: S[],
-        headersCodec: t.Type<H>
-    ): Promise<Result<MhcmsFolder<H, S>, string>> {
-        const _index = await this.readIndex(folderPath, headersCodec, collections);
+    public static simpleBlog(fileAccess: IMhcmsFileAccess) {
+        return new MhcmsClient(fileAccess, ["drafts", "published"], t.record(t.string, t.string));
+    }
+
+    public async folder(folderPath: string): Promise<Result<MhcmsFolder<H, S>, string>> {
+        const _index = await this.readIndex(folderPath);
         if (_index.isNg()) { return _index; }
         const index = _index.value;
 
         return ok(new MhcmsFolder<H, S>(folderPath, index, this.fileAccess));
     }
 
-    public async indexFolder<H, S extends string>(
-        folder: string,
-        headersCodec: t.Type<H>,
-        collections: S[],
-        force: boolean = false,
-    ): Promise<Result<IMhcmsFolderIndex<H, S>, string>> {
+    public async indexFolder(folder: string, force: boolean = false): Promise<Result<IMhcmsFolderIndex<H, S>, string>> {
         const indexFilePath = path.join(folder, "index.yaml");
-        const _currentIndex = await readIndexFile<H, S>(indexFilePath, headersCodec, collections, this.fileAccess);
+        const _currentIndex = await readIndexFile<H, S>(indexFilePath, this.headersCodec, this.collections, this.fileAccess);
 
         const currentIndex = _currentIndex.isNg() ? null : _currentIndex.value;
 
-        const _newIndex = await this.generateOrUpdateIndex<H, S>(
-            folder, headersCodec, collections, currentIndex, force ? "forced" : "auto");
+        const _newIndex = await this.generateOrUpdateIndex(folder, currentIndex, force ? "forced" : "auto");
         if (_newIndex.isNg()) { return _newIndex; }
         const newIndex = _newIndex.value;
 
         return await writeYamlIndexFile(indexFilePath, newIndex, this.fileAccess);
     }
 
-    private async readIndex<H, S extends string>(
-        folder: string,
-        headersCodec: t.Type<H>,
-        collections: S[]
-    ): Promise<Result<IMhcmsFolderIndex<H, S>, string>> {
+    private async readIndex(folder: string): Promise<Result<IMhcmsFolderIndex<H, S>, string>> {
         const indexFilePath = path.join(folder, "index.yaml");
-        return await readIndexFile<H, S>(indexFilePath, headersCodec, collections, this.fileAccess);
+        return await readIndexFile<H, S>(indexFilePath, this.headersCodec, this.collections, this.fileAccess);
     }
 
-    private async generateOrUpdateIndex<H, S extends string>(
+    private async generateOrUpdateIndex(
         folder: string,
-        headersCodec: t.Type<H>,
-        collections: S[],
         currentIndex: IMhcmsFolderIndex<H, S> | null,
         indexMode: IndexMode
     ): Promise<Result<IMhcmsFolderIndex<H, S>, string>> {
@@ -75,9 +67,9 @@ export default class MhcmsClient {
         const fileSearchOptions = ((indexMode == "auto") && currentIndex?.lastUpdate) ? {
             after: currentIndex.lastUpdate
         } : { /** all files */ };
-        for (let collection of collections) {
+        for (let collection of this.collections) {
             const newFileEntries = await listFileEntriesInSection(
-                folder, collection, headersCodec, fileSearchOptions, this.fileAccess);
+                folder, collection, this.headersCodec, fileSearchOptions, this.fileAccess);
 
             if (collection in res.collections) {
                 const existingFileEntries = res.collections[collection];
@@ -91,7 +83,7 @@ export default class MhcmsClient {
     }
 }
 
-class MhcmsFolder<H, S extends string | symbol> {
+export class MhcmsFolder<H, S extends string | symbol> {
     constructor(
         readonly folder: string,
         private index: IMhcmsFolderIndex<H, S>,
@@ -100,17 +92,19 @@ class MhcmsFolder<H, S extends string | symbol> {
         /** */
     }
 
-    async updateIndex(force: boolean = false): Promise<void> {
-    }
-
-    async sections(): Promise<S[]> {
+    sections(): S[] {
         /** TODO: I should not need the "as S[]"" */
         return Object.keys(this.index.collections) as S[];
     }
 
-    async list(options: IPostSearchOptions<S>): Promise<IMhcmsArticleHeaders<H>[]> {
+    articles(_options: IPostSearchOptions<S> | S): IMhcmsArticleHeaders<H>[] {
         const res: IMhcmsArticleHeaders<H>[] = [];
-        for (const section of options.collections) {
+
+        const options = typeof _options === "object" ? _options : { collections: _options };
+
+        const collections = Array.isArray(options.collections) ? options.collections : [options.collections];
+        
+        for (const section of collections) {
             const posts = this.index.collections[section];
             for (let post of posts) {
                 if (options.before && post.date > options.before) {
@@ -157,7 +151,7 @@ class MhcmsFolder<H, S extends string | symbol> {
 }
 
 export interface IPostSearchOptions<S> {
-    collections: S[];
+    collections: S | S[];
     before?: Date;
     after?: Date;
     offset?: number;

@@ -1,41 +1,21 @@
 {
   "name": "mhcms",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Minimal Headless Content Management System",
-  "//": "Overrides for node 14.17 and above",
+  
   "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
   "types": "dist/cjs/types/index.d.ts",
   "files": [
     "./dist/**/*"
   ],
-  "exports": {
-    ".": {
-      "import": {
-        "default": "./dist/esm/index.js",
-        "types": "./dist/esm/types/index.d.ts"
-      },
-      "require": {
-        "default": "./dist/cjs/index.js",
-        "types": "./dist/cjs/types/index.d.ts"
-      }
-    },
-    "./file-access": {
-      "import": {
-        "default": "./dist/esm/file-access/index.js",
-        "types": "./dist/esm/types/file-access/index.d.ts"
-      },
-      "require": {
-        "default": "./dist/cjs/file-access/index.js",
-        "types": "./dist/cjs/types/file-access/index.d.ts"
-      }
-    }
-  },
+  
   "scripts": {
     "clean": "rm -rf ./dist",
-    "prepare": "npm run build",
+    "prepare": "npm run test && npm run build",
     "build": "npm run clean && npm run build:esm && npm run build:cjs",
-    "build:esm": "tsc -p ./tsconfig.esm.json",
-    "build:cjs": "tsc -p ./tsconfig.cjs.json",
+    "build:esm": "tsc -p ./deploy-config/tsconfig.esm.json",
+    "build:cjs": "tsc -p ./deploy-config/tsconfig.cjs.json",
     "test": "npm test"
   },
   "repository": {
@@ -62,9 +42,10 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.388.0",
-    "fp-ts": "^2.16.1",
-    "io-ts": "^2.2.20",
     "yaml": "^2.3.1"
+  },
+  "peerDependencies": {
+    "io-ts": "^2.2.20",
+    "@aws-sdk/client-s3": "^3.388.0"
   }
 }
