@@ -2,7 +2,7 @@ export function ok<V>(value: V) {
     return new OkResult<V>(value);
 }
 
-export function ng<V, E>(error: E, fromError?: NgResult<E>, exception?: any) {
+export function ng<E>(error: E, fromError?: NgResult<E>, exception?: any) {
     return new NgResult<E>(error, fromError, exception);
 }
 
