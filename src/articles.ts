@@ -284,7 +284,7 @@ export function parseCodeBlockParagraph(lines: string[]): IMhcmsCodeBlockArticle
         }
         const languageName = languageParts[0];
         const options = languageParts.slice(1).reduce((res, x) => {
-            const xx = x.split("=", 2);
+            const xx = splitAtFirstEqual(x);
             const [key, value] = xx.length === 2 ? [xx[0], cleanLanguageOptionsValue(xx[1])] : 
                 xx[0].startsWith("!") ? [xx[0].slice(1), false] : [xx[0], true];
             res[key] = value;
@@ -319,5 +319,14 @@ function cleanLanguageOptionsValue(value: string) {
         return Number(value);
     } else {
         return value;
+    }
+}
+
+function splitAtFirstEqual(s: string) {
+    const index = s.indexOf("=");
+    if (index === -1) {
+        return [s];
+    } else {
+        return [s.slice(0, index), s.slice(index + 1)];
     }
 }

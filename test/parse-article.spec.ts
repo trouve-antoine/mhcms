@@ -29,6 +29,31 @@ describe("Parse code blocks", () => {
         expect(block.options.hasOutput).to.equal(true);
         expect(block.options.canExecute).to.equal(false);
     });
+    it("Parse options with double quotes", () => {
+        const block = parseCodeBlockParagraph(["```{cool name=\"you\" large !small}", "toto", "```"]);
+        expect(block.content).to.equal("toto");
+        expect(block.language).to.equal("cool");
+        expect(block.options.name).to.equal("you");
+        expect(block.options.large).to.equal(true);
+        expect(block.options.small).to.equal(false);
+    });
+    it("Parse options with single quotes", () => {
+        const block = parseCodeBlockParagraph(["```{cool name='you' large !small}", "toto", "```"]);
+        expect(block.content).to.equal("toto");
+        expect(block.language).to.equal("cool");
+        expect(block.options.name).to.equal("you");
+        expect(block.options.large).to.equal(true);
+        expect(block.options.small).to.equal(false);
+    });
+    it("Parse options with equal in value", () => {
+        const block = parseCodeBlockParagraph(["```{cool name='you=' toto==ta=ta= large !small}", "toto", "```"]);
+        expect(block.content).to.equal("toto");
+        expect(block.language).to.equal("cool");
+        expect(block.options.name).to.equal("you=");
+        expect(block.options.toto).to.equal("=ta=ta=");
+        expect(block.options.large).to.equal(true);
+        expect(block.options.small).to.equal(false);
+    });
 });
 
 describe("Parse paragraph", () => {
