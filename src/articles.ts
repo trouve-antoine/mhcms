@@ -274,7 +274,7 @@ export function parseCodeBlockParagraph(lines: string[]): IMhcmsCodeBlockArticle
             content: lines.slice(1, lines.length - 1).join("\n")
         }
     } else if (isStructuredLanguageField) {
-        let languageParts = language.slice(1, language.length - 1).split(" ").map(x => x.trim()).filter(Boolean);
+        let languageParts = splitAroundSpaces(language.slice(1, language.length - 1)).map(x => x.trim()).filter(Boolean);
         if (languageParts.length === 0) {
             return {
                 type: "code-block",
@@ -329,4 +329,11 @@ function splitAtFirstEqual(s: string) {
     } else {
         return [s.slice(0, index), s.slice(index + 1)];
     }
+}
+
+function splitAroundSpaces(s: string) {
+    // Handles single and double quotes
+    // e.g. toto="yes man" tata="yes mam"
+    // return [...s.match(/[\w-]+="[^"]*"|[\w-]+='[^']*|[\w-]+=[^\s]+|![\w-]+|[\w-]+'/g)]
+    return [...s.match(/[\w-]+="[^"]*"|[\w-]+='[^']*'|[\w-]+=[^\s]+|(!|@)[\w-]+|\w+/g)]
 }

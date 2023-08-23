@@ -54,6 +54,15 @@ describe("Parse code blocks", () => {
         expect(block.options.large).to.equal(true);
         expect(block.options.small).to.equal(false);
     });
+    
+    it("Parse options with space in value", () => {
+        const block = parseCodeBlockParagraph(["```{cool name='you are my sunshine' large !small}", "toto", "```"]);
+        expect(block.content).to.equal("toto");
+        expect(block.language).to.equal("cool");
+        expect(block.options.name).to.equal("you are my sunshine");
+        expect(block.options.large).to.equal(true);
+        expect(block.options.small).to.equal(false);
+    });
 });
 
 describe("Parse paragraph", () => {
