@@ -1,37 +1,35 @@
 import * as path from "path";
-import * as t from "io-ts";
 import * as yaml from "yaml";
 import { IListFileOptions, IMhcmsFileAccess } from "./file-access/types";
 import { IMhcmsFolderIndex, IMhcmsArticleHeaders, parseIndexFile } from "./folder-index";
 import { Result, ok, ng } from "./result";
-import { getArticleContents, parseArticle } from "./articles";
+import { IMhcmsArticle, MhcmsArticleContent, getArticleContents, parseArticle } from "./articles";
 
 type IndexMode = "off" | "forced" | "auto"
 
-export class MhcmsClient<H, S extends string> {
+export class MhcmsClient<S extends string> {
     constructor(
         private fileAccess: IMhcmsFileAccess,
-        readonly collections: S[],
-        readonly headersCodec: t.Type<H>
+        readonly collections: readonly S[]
     ) {
         /** */
     }
 
     public static simpleBlog(fileAccess: IMhcmsFileAccess) {
-        return new MhcmsClient(fileAccess, ["drafts", "published"], t.record(t.string, t.string));
+        return new MhcmsClient(fileAccess, ["drafts", "published"]);
     }
 
-    public async folder(folderPath: string): Promise<Result<MhcmsFolder<H, S>, string>> {
+    public async folder(folderPath: string): Promise<Result<MhcmsFolder<S>, string>> {
         const _index = await this.readIndex(folderPath);
         if (_index.isNg()) { return _index; }
         const index = _index.value;
 
-        return ok(new MhcmsFolder<H, S>(folderPath, index, this.fileAccess));
+        return ok(new MhcmsFolder<S>(folderPath, index, this.fileAccess));
     }
 
-    public async indexFolder(folder: string, force: boolean = false): Promise<Result<IMhcmsFolderIndex<H, S>, string>> {
+    public async indexFolder(folder: string, force: boolean = false): Promise<Result<IMhcmsFolderIndex<S>, string>> {
         const indexFilePath = path.join(folder, "index.yaml");
-        const _currentIndex = await readIndexFile<H, S>(indexFilePath, this.headersCodec, this.collections, this.fileAccess);
+        const _currentIndex = await readIndexFile<S>(indexFilePath, this.collections, this.fileAccess);
 
         const currentIndex = _currentIndex.isNg() ? null : _currentIndex.value;
 
@@ -42,19 +40,19 @@ export class MhcmsClient<H, S extends string> {
         return await writeYamlIndexFile(indexFilePath, newIndex, this.fileAccess);
     }
 
-    private async readIndex(folder: string): Promise<Result<IMhcmsFolderIndex<H, S>, string>> {
+    private async readIndex(folder: string): Promise<Result<IMhcmsFolderIndex<S>, string>> {
         const indexFilePath = path.join(folder, "index.yaml");
-        return await readIndexFile<H, S>(indexFilePath, this.headersCodec, this.collections, this.fileAccess);
+        return await readIndexFile<S>(indexFilePath, this.collections, this.fileAccess);
     }
 
     private async generateOrUpdateIndex(
         folder: string,
-        currentIndex: IMhcmsFolderIndex<H, S> | null,
+        currentIndex: IMhcmsFolderIndex<S> | null,
         indexMode: IndexMode
-    ): Promise<Result<IMhcmsFolderIndex<H, S>, string>> {
-        const res: IMhcmsFolderIndex<H, S> = currentIndex ?? {
+    ): Promise<Result<IMhcmsFolderIndex<S>, string>> {
+        const res: IMhcmsFolderIndex<S> = currentIndex ?? {
             lastUpdate: new Date(),
-            collections: {} as Record<S, IMhcmsArticleHeaders<H>[]>
+            collections: {} as Record<S, IMhcmsArticleHeaders[]>
         }
 
         if (indexMode === "off") {
@@ -69,7 +67,7 @@ export class MhcmsClient<H, S extends string> {
         } : { /** all files */ };
         for (let collection of this.collections) {
             const newFileEntries = await listFileEntriesInSection(
-                folder, collection, this.headersCodec, fileSearchOptions, this.fileAccess);
+                folder, collection, fileSearchOptions, this.fileAccess);
 
             if (collection in res.collections) {
                 const existingFileEntries = res.collections[collection];
@@ -83,10 +81,10 @@ export class MhcmsClient<H, S extends string> {
     }
 }
 
-export class MhcmsFolder<H, S extends string | symbol> {
+export class MhcmsFolder<S extends string | symbol> {
     constructor(
         readonly folder: string,
-        private index: IMhcmsFolderIndex<H, S>,
+        private index: IMhcmsFolderIndex<S>,
         private fileAccess: IMhcmsFileAccess)
     {
         /** */
@@ -97,8 +95,8 @@ export class MhcmsFolder<H, S extends string | symbol> {
         return Object.keys(this.index.collections) as S[];
     }
 
-    articles(_options: IPostSearchOptions<S> | S): IMhcmsArticleHeaders<H>[] {
-        const res: IMhcmsArticleHeaders<H>[] = [];
+    articleHeaders(_options: IPostSearchOptions<S> | S): IMhcmsArticleHeaders[] {
+        const res: IMhcmsArticleHeaders[] = [];
 
         const options = typeof _options === "object" ? _options : { collections: _options };
 
@@ -107,6 +105,10 @@ export class MhcmsFolder<H, S extends string | symbol> {
         for (const section of collections) {
             const posts = this.index.collections[section];
             for (let post of posts) {
+                if (options.title && post.title !== options.title) {
+                    continue;
+                }
+
                 if (options.before && post.date > options.before) {
                     continue;
                 }
@@ -137,7 +139,7 @@ export class MhcmsFolder<H, S extends string | symbol> {
         return res.splice(options.offset || 0, options.limit || res.length);
     }
 
-    async article(article: IMhcmsArticleHeaders<H>) {
+    async article(article: IMhcmsArticleHeaders): Promise<Result<IMhcmsArticle, string>> {
         const _contents = await this.fileAccess.readTextFile(article.path);
         if (_contents.isNg()) { return ng("Unable to access contents of text file", _contents); }
         const contents = _contents.value;
@@ -146,7 +148,10 @@ export class MhcmsFolder<H, S extends string | symbol> {
         if (!res) {
             return ng("Got no article contents from file: " + article.path);
         }
-        return ok(res);
+        return ok({
+            headers: article,
+            contents: res
+        });
     }
 }
 
@@ -158,6 +163,7 @@ export interface IPostSearchOptions<S> {
     limit?: number;
     tags?: string[];
     authors?: string[];
+    title?: string;
     sorting?: { key: "date", direction: "ascending" | "descending" };
 }
 
@@ -195,16 +201,15 @@ function kebabCaseToSentence(kebab: string): string {
     return space[0].toUpperCase() + space.slice(1);
 }
 
-async function readIndexFile<H, S extends string>(
+async function readIndexFile<S extends string>(
     path: string,
-    headersCodec: t.Type<H>,
-    collections: S[],
+    collections: readonly S[],
     fileAccess: IMhcmsFileAccess
-): Promise<Result<IMhcmsFolderIndex<H, S>, string>> {
+): Promise<Result<IMhcmsFolderIndex<S>, string>> {
     try {
         const _indexFile = await fileAccess.readTextFile(path);
         if (_indexFile.isNg()) { return ng("Unable to read index file.", _indexFile) }
-        return parseIndexFile(_indexFile.value, collections, headersCodec);
+        return parseIndexFile(_indexFile.value, collections);
     } catch (e) {
         return ng("Unable to access index file.");
     }
@@ -212,9 +217,9 @@ async function readIndexFile<H, S extends string>(
 
 async function writeYamlIndexFile<H, S extends string>(
     path: string,
-    index: IMhcmsFolderIndex<H, S>,
+    index: IMhcmsFolderIndex<S>,
     fileAccess: IMhcmsFileAccess
-): Promise<Result<IMhcmsFolderIndex<H, S>, string>> {
+): Promise<Result<IMhcmsFolderIndex<S>, string>> {
     try {
         const indexFileContents = yaml.stringify(index);
         await fileAccess.writeTextFile(path, indexFileContents);
@@ -226,10 +231,10 @@ async function writeYamlIndexFile<H, S extends string>(
 }
 
 async function listFileEntriesInSection<H, S extends string>(
-    folder: string, section: S, headersCodec: t.Type<H>, fileSearchOptions: IListFileOptions, fileAccess: IMhcmsFileAccess
-): Promise<IMhcmsArticleHeaders<H>[]> {
+    folder: string, section: S, fileSearchOptions: IListFileOptions, fileAccess: IMhcmsFileAccess
+): Promise<IMhcmsArticleHeaders[]> {
     const fileEntries = await fileAccess.listFiles(path.join(folder, section), fileSearchOptions);
-    const res: IMhcmsArticleHeaders<H>[] = [];
+    const res: IMhcmsArticleHeaders[] = [];
     
     for (let fileEntry of fileEntries) {
         const _parsedName = parsePostFileName(fileEntry.name);
@@ -246,7 +251,7 @@ async function listFileEntriesInSection<H, S extends string>(
         }
 
         const _post = parseArticle(
-            _fileContent.value, parsedName.date, parsedName.shortTitle, fileEntry.path, headersCodec);
+            _fileContent.value, parsedName.date, parsedName.shortTitle, fileEntry.path);
 
         if (_post.isNg()) {
             console.error(`Skipping file ${fileEntry.name}: ${_post.pretty()}`);
@@ -260,15 +265,15 @@ async function listFileEntriesInSection<H, S extends string>(
     return res;
 }
 
-function mergeFileEntries<H>(dst: IMhcmsArticleHeaders<H>[], src: IMhcmsArticleHeaders<H>[]) {
+function mergeFileEntries<H>(dst: IMhcmsArticleHeaders[], src: IMhcmsArticleHeaders[]) {
     const _dst = dst.reduce((acc, e) => {
         acc[e.path] = e;
         return acc;
-    }, {} as Record<string, IMhcmsArticleHeaders<H>>);
+    }, {} as Record<string, IMhcmsArticleHeaders>);
     const _src = src.reduce((acc, e) => {
         acc[e.path] = e;
         return acc;
-    }, {} as Record<string, IMhcmsArticleHeaders<H>>);
+    }, {} as Record<string, IMhcmsArticleHeaders>);
 
     const _res = {..._dst, ..._src};
 

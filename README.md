@@ -89,7 +89,80 @@ for (let article of publishedArticles) {
 }
 ```
 
+## Markdown Extension
+
+If you wish, you can parse the paragraphs within a section.
+Paragraphs are blocks of text separated by an empty line.
+In this case, MHCMS does some extra parsing in order to better structure your
+data.
+
+Normal text paragraphs are stored with te boring structure below:
+
+```
+interface IMhcmsTextArticleParagraph {
+    readonly type: "text"
+    readonly content: string;
+}
+```
+
+### Quote Extensions
+
+It is possible to specify the author of a quote by prepending at least one
+hyphen to the last line of the quote
+
+```
+> I eat cereals this morning
+> --- Sir Quaker
+```
+
+Quotation blocks are stored with structure:
+
+```
+interface IMhcmsQuoteArticleParagraph {
+    readonly type: "quote"
+    readonly content: string;
+    readonly author?: string;
+}
+```
+
+### Code Block Extension
+
+Code blocks are represented with the interface below:
+
+```
+interface IMhcmsCodeBlockArticleParagraph {
+    readonly type: "code-block"
+    readonly language?: string;
+    readonly content: string;
+    readonly options?: Record<string, string | boolean | number>;
+}
+```
+
+It is possible to specify the language directly after the three backquotes.
+You can also use further structure with curly-brace syntax
+`{language key=value bool-key !bool-key @system-key}`.
+The value supports single and double quotes as well.
+
+The supported system keys are:
+
+- `@parse`: MHCMS parses the code block into an object, and stores in
+member `content` instead of a string. Only JSON and YAML are supported for now
+
 ## TODO
 
+- special [] syntaxes
+
+```
+evaluateTextParapgraph(
+  commands: Record<str, (...args: string[])>,
+  imgBase: str | { prefix: replace } | (url: string) => string,
+  urlBase: str | { prefix: replace } | (url: string) => string,
+)
+```
+
+
+  [html-tag.class content], e.g. [kbd A] [span.red yay]
+  [!cmd arg1, arg2] e.g. [!year]
 - specify a callback for image or links
   (not sure how that would work)
+- @array to convert into html arrays

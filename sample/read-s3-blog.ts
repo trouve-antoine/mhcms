@@ -1,11 +1,9 @@
-import * as t from 'io-ts';
-
 import {MhcmsClient} from '../src';
 import s3FileAccess from '../src/file-access/s3';
 
 async function main() {
     const fileAccess = new s3FileAccess("hoposhell-website");
-    const client = new MhcmsClient(fileAccess, ["drafts"], t.record(t.string, t.string));
+    const client = new MhcmsClient(fileAccess, ["drafts"]);
 
     const _folder = await client.folder("www/blog");
     if (_folder.isNg()) {

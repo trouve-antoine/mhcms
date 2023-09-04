@@ -9,8 +9,8 @@ const DEFAULT_OBJECT_PARSERS = {
     "json": JSON.parse
 }
 
-export interface IMhcmsArticle<H> {
-    headers: IMhcmsArticleHeaders<H>;
+export interface IMhcmsArticle {
+    headers: IMhcmsArticleHeaders;
     contents: MhcmsArticleContent;
 }
 
@@ -57,7 +57,7 @@ export interface IMhcmsObjectArticleParagraph {
 export type IMhcmsArticleParagraph = IMhcmsEmptyArticleParagraph | IMhcmsTextArticleParagraph | IMhcmsObjectArticleParagraph | IMhcmsCodeBlockArticleParagraph | IMhcmsQuoteArticleParagraph;
 
 export class MhcmsArticleContent {
-    constructor(private lines: string[], private sectionLevel: number = 0) { /** */ }
+    constructor(readonly lines: string[], private sectionLevel: number = 0) { /** */ }
 
     get content(): string {
         return this.lines.join("\n");
@@ -98,7 +98,9 @@ export class MhcmsArticleContent {
         }
     }
 
-    *paragraphs(extraObjectParsers?: Record<string, (content: string) => object>): Generator<IMhcmsArticleParagraph> {
+    *paragraphs(
+        extraObjectParsers?: Record<string, (content: string) => object>,
+    ): Generator<IMhcmsArticleParagraph> {
         const objectParsers = { ...DEFAULT_OBJECT_PARSERS, ...extraObjectParsers };
 
         let currentParagraph: string[] = [];
@@ -189,8 +191,7 @@ export function parseArticle<H>(
     date: Date,
     shortTitle: string,
     path: string,
-    customHeadersCodec: t.Type<H>
-): Result<IMhcmsArticle<H>, string> {
+): Result<IMhcmsArticle, string> {
     /** From the content of an article, returns headers and content */
     const _lines = separateHeadersAndContentLines(content);
     if (_lines === null) { return ng("Unable to separate headers and contents"); }
@@ -198,7 +199,7 @@ export function parseArticle<H>(
     
     const rawCamelHeaders = rawCamelHeadersFronLines(headerLines);
     const _headers = makeArticleEntryFromHeadersRawKeyValue(
-        rawCamelHeaders, date, shortTitle, path, customHeadersCodec);
+        rawCamelHeaders, date, shortTitle, path);
     
     if (_headers.isNg()) {
         return ng("Got errors when parsing headers.", _headers);
@@ -214,9 +215,8 @@ function makeArticleEntryFromHeadersRawKeyValue<H>(
     rawCamelHeaders: Record<string, string>,
     date: Date,
     shortTitle: string,
-    path: string,
-    customHeadersCodec: t.Type<H>
-): Result<IMhcmsArticleHeaders<H>, string> {
+    path: string
+): Result<IMhcmsArticleHeaders, string> {
     const entryWithoutCustomHeaders = {
         date,
         shortTitle,
@@ -237,7 +237,7 @@ function makeArticleEntryFromHeadersRawKeyValue<H>(
         return res;
     }, {} as Record<string, string>);
 
-    const _customHeaders = customHeadersCodec.decode(rawCustomCamelHeaders);
+    const _customHeaders = t.record(t.string, t.unknown).decode(rawCustomCamelHeaders);
     if (isLeft(_customHeaders)) {
         return ng(`Unable to parse custom headers: ${JSON.stringify(rawCustomCamelHeaders)}.`);
     }

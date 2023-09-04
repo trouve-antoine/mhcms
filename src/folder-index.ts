@@ -5,9 +5,8 @@ import { Result, ok, ng } from './result';
 
 export function parseIndexFile<H, S extends string | symbol>(
     contents: string,
-    collections: S[],
-    customHeadersCodec: t.Type<H>
-): Result<IMhcmsFolderIndex<H, S>, string> {
+    collections: readonly S[],
+): Result<IMhcmsFolderIndex<S>, string> {
     const dateCodec = MIsoDateString;
 
     const entryCodec = t.type({
@@ -18,7 +17,7 @@ export function parseIndexFile<H, S extends string | symbol>(
         subTitle: t.string,
         tags: t.array(t.string),
         authors: t.array(t.string),
-        customHeaders: customHeadersCodec
+        customHeaders: t.record(t.string, t.unknown)
     })
 
     const codec = t.type({
@@ -46,16 +45,16 @@ export function parseIndexFile<H, S extends string | symbol>(
             const [collectionName, entries] = x;
             res[collectionName as S] = entries;
             return res;
-        }, {} as Record<S, IMhcmsArticleHeaders<H>[]>)
+        }, {} as Record<S, IMhcmsArticleHeaders[]>)
     })
 }
 
-export interface IMhcmsFolderIndex<H, S extends string | symbol> {
+export interface IMhcmsFolderIndex<S extends string | symbol> {
     lastUpdate: Date;
-    collections: Record<S, IMhcmsArticleHeaders<H>[]>;
+    collections: Record<S, IMhcmsArticleHeaders[]>;
 }
 
-export interface IMhcmsArticleHeaders<H> {
+export interface IMhcmsArticleHeaders {
     date: Date
     shortTitle: string
     path: string
@@ -64,7 +63,7 @@ export interface IMhcmsArticleHeaders<H> {
     tags: string[]
     authors: string[]
     /** */
-    customHeaders: H
+    customHeaders: Record<string, unknown>
 }
 
 /** */

@@ -1,14 +1,19 @@
 {
   "name": "mhcms",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Minimal Headless Content Management System",
   
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
-  "types": "dist/cjs/types/index.d.ts",
+  "types": "dist/cjs/index.d.ts",
+
   "files": [
     "./dist/**/*"
   ],
+
+  "bin": {
+    "mhcms-index": "./dist/cjs/generate-index.js"
+  },
   
   "scripts": {
     "clean": "rm -rf ./dist",
@@ -42,10 +47,10 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "yaml": "^2.3.1"
+    "yaml": "^2.3.1",
+    "io-ts": "^2.2.20"
   },
   "peerDependencies": {
-    "io-ts": "^2.2.20",
     "@aws-sdk/client-s3": "^3.388.0"
   }
 }

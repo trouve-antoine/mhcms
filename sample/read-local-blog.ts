@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import * as t from 'io-ts';
 import LocalFileAccess from '../src/file-access/local';
 import {MhcmsClient} from '../src';
 
@@ -8,7 +7,7 @@ const SAMPLE_FOLDER_PATH = path.join(__dirname, "..", "sample");
 
 async function main() {
     const fileAccess = new LocalFileAccess(SAMPLE_FOLDER_PATH);
-    const client = new MhcmsClient(fileAccess, ["drafts", "published"], t.record(t.string, t.string));
+    const client = new MhcmsClient(fileAccess, ["drafts", "published"]);
 
     const _folder = await client.folder("blog");
     if (_folder.isNg()) {
@@ -18,7 +17,7 @@ async function main() {
     }
     const folder = _folder.value;
 
-    const articles = await folder.list({ collections: ["published"] });
+    const articles = await folder.articleHeaders({ collections: ["published"] });
     const _article = await folder.article(articles[0]);
     if (_article.isNg()) {
         console.error("Failed to read the article.");
@@ -26,7 +25,7 @@ async function main() {
     }
     const article = _article.value;
 
-    for (const section of article.sections()) {
+    for (const section of article.contents.sections()) {
         if (!["The Content", "Read-Only Features"].includes(section.name || "")) {
             continue;
         }
