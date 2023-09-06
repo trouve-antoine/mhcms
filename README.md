@@ -62,7 +62,7 @@ The example above uses sub-folder `drafts` and `published`, but it can be anythi
 We call these sub-folders "collections".
 
 At the root (e.g. the `./blog` folder in the example above), MHCMS will create an index
-file with name `index.yaml`. It contains the list of paths together with their header data.
+file with the name `index.yaml`. It contains the list of paths together with their header data.
 It is human-readable, but it is usually a bad idea to edit it by hand.
 If you delete this file, you will need to re-generate it for the system to work.
 
@@ -93,7 +93,7 @@ for (let article of publishedArticles) {
 
 If you wish, you can parse the paragraphs within a section.
 Paragraphs are blocks of text separated by an empty line.
-In this case, MHCMS does some extra parsing in order to better structure your
+In this case, MHCMS does some extra parsing to better structure your
 data.
 
 Normal text paragraphs are stored with te boring structure below:
@@ -111,7 +111,7 @@ It is possible to specify the author of a quote by prepending at least one
 hyphen to the last line of the quote
 
 ```
-> I eat cereals this morning
+> I ate cereals this morning
 > --- Sir Quaker
 ```
 

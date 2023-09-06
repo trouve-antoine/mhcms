@@ -2,16 +2,33 @@ import * as yaml from "yaml";
 import { isLeft } from "fp-ts/lib/Either";
 import * as t from "io-ts";
 import { ok, ng, Result } from "./result";
-import { IMhcmsArticleHeaders } from "./folder-index";
+import { IMhcmsArticleHeaders, ISerializableMhcmsArticleHeaders } from "./folder-index";
 
 const DEFAULT_OBJECT_PARSERS = {
     "yaml": yaml.parse,
     "json": JSON.parse
 }
 
-export interface IMhcmsArticle {
-    headers: IMhcmsArticleHeaders;
-    contents: MhcmsArticleContent;
+export class MhcmsArticle {
+    constructor(readonly headers: IMhcmsArticleHeaders, readonly contents: MhcmsArticleContent) { /** */ }
+
+    toJson(): ISerializableMhcmsArticle {
+        return {
+            headers: { ...this.headers, date: this.headers.date.toISOString() },
+            lines: this.contents.lines
+        }
+    }
+    static fromJson(json: ISerializableMhcmsArticle): MhcmsArticle {
+        return new MhcmsArticle(
+            { ...json.headers, date: new Date(json.headers.date) },
+            new MhcmsArticleContent(json.lines)
+        )
+    }
+}
+
+export interface ISerializableMhcmsArticle {
+    headers: ISerializableMhcmsArticleHeaders
+    lines: string[]
 }
 
 export class MhcmsArticleSection {
@@ -64,12 +81,12 @@ export class MhcmsArticleContent {
     }
 
     *sections(): Generator<MhcmsArticleSection> {
-        const sectionStart = "#".repeat(this.sectionLevel + 1);
-        const sectionStartRegex = new RegExp(`^${sectionStart}\s*(.*)\s*$`);
+        const sectionStart = "#".repeat(this.sectionLevel + 1) + " ";
+        // const sectionStartRegex = new RegExp(`^${sectionStart}\s+(.*)\s*$`);
 
         let inCodeBlock = false;
         
-        let currentSectionInfos: { headingLine?: string, lines: string[] } = { lines: [] };
+        let currentSectionInfos: { heading?: string, lines: string[] } = { lines: [] };
         for (let line of this.lines) {
             if (line.startsWith("```")) {
                 inCodeBlock = !inCodeBlock;
@@ -79,20 +96,19 @@ export class MhcmsArticleContent {
                 continue;
             }
 
-            const match = line.match(sectionStartRegex);
-            if (match !== null) {
+            if (line.startsWith(sectionStart)) {
                 yield new MhcmsArticleSection(
-                    currentSectionInfos.headingLine,
+                    currentSectionInfos.heading,
                     new MhcmsArticleContent(currentSectionInfos.lines, this.sectionLevel + 1)
                 )
-                currentSectionInfos = { headingLine: match[1], lines: [] };
+                currentSectionInfos = { heading: line.substring(sectionStart.length).trim(), lines: [] };
             } else {
                 currentSectionInfos.lines.push(line);
             }
         }
         if (currentSectionInfos.lines.length > 0) {
             yield new MhcmsArticleSection(
-                currentSectionInfos.headingLine,
+                currentSectionInfos.heading,
                 new MhcmsArticleContent(currentSectionInfos.lines, this.sectionLevel + 1)
             )
         }
@@ -191,7 +207,7 @@ export function parseArticle<H>(
     date: Date,
     shortTitle: string,
     path: string,
-): Result<IMhcmsArticle, string> {
+): Result<MhcmsArticle, string> {
     /** From the content of an article, returns headers and content */
     const _lines = separateHeadersAndContentLines(content);
     if (_lines === null) { return ng("Unable to separate headers and contents"); }
@@ -205,10 +221,9 @@ export function parseArticle<H>(
         return ng("Got errors when parsing headers.", _headers);
     }
 
-    return ok({
-        headers: _headers.value,
-        contents: new MhcmsArticleContent(contentLines)
-    });
+    return ok(
+        new MhcmsArticle(_headers.value, new MhcmsArticleContent(contentLines))
+    );
 }
 
 function makeArticleEntryFromHeadersRawKeyValue<H>(
@@ -223,8 +238,8 @@ function makeArticleEntryFromHeadersRawKeyValue<H>(
         path,
         title: rawCamelHeaders.title,
         subTitle: rawCamelHeaders.subTitle,
-        tags: rawCamelHeaders.tags.split(",").map(x => x.trim()).filter(Boolean),
-        authors: rawCamelHeaders.authors.split(",").map(x => x.trim()).filter(Boolean),
+        tags: rawCamelHeaders.tags ? rawCamelHeaders.tags.split(",").map(x => x.trim()).filter(Boolean) : [],
+        authors: rawCamelHeaders.authors ? rawCamelHeaders.authors.split(",").map(x => x.trim()).filter(Boolean) : [],
         customHeaders: null
     }
 
@@ -237,7 +252,7 @@ function makeArticleEntryFromHeadersRawKeyValue<H>(
         return res;
     }, {} as Record<string, string>);
 
-    const _customHeaders = t.record(t.string, t.unknown).decode(rawCustomCamelHeaders);
+    const _customHeaders = t.record(t.string, t.string).decode(rawCustomCamelHeaders);
     if (isLeft(_customHeaders)) {
         return ng(`Unable to parse custom headers: ${JSON.stringify(rawCustomCamelHeaders)}.`);
     }

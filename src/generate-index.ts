@@ -36,7 +36,7 @@ async function main() {
         exit(1);
     }
 
-    console.info("Generated index file !");
+    console.info("Generated index file !", _folder.value);
 }
 
 function parseArgs(): IArgs | null {
@@ -66,7 +66,7 @@ function showUsage() {
 async function getLocalFolder(folder: string, collections: string[]) {
     const fileAccess = new LocalFileAccess(folder);
     const client = new MhcmsClient(fileAccess, collections);
-    return await client.indexFolder(folder);
+    return await client.indexFolder(".");
 }
 
 async function getS3Folder(bucket: string, prefix: string, collections: string[]) {

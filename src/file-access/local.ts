@@ -49,12 +49,8 @@ export default class LocalFileAccess implements IMhcmsFileAccess {
     }
 
     async writeTextFile(file: string, content: string) {
-        try {
-            const filePath = path.join(this.root, file);
-            await fs.writeFile(filePath, content, { encoding: 'utf-8' });
-            return true;
-        } catch(err) {
-            return false;
-        }
+        const filePath = path.join(this.root, file);
+        await fs.writeFile(filePath, content, { encoding: 'utf-8' });
+        return true;
     }
 }

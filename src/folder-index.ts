@@ -17,7 +17,7 @@ export function parseIndexFile<H, S extends string | symbol>(
         subTitle: t.string,
         tags: t.array(t.string),
         authors: t.array(t.string),
-        customHeaders: t.record(t.string, t.unknown)
+        customHeaders: t.record(t.string, t.string)
     })
 
     const codec = t.type({
@@ -63,7 +63,11 @@ export interface IMhcmsArticleHeaders {
     tags: string[]
     authors: string[]
     /** */
-    customHeaders: Record<string, unknown>
+    customHeaders: Record<string, string>
+}
+
+export interface ISerializableMhcmsArticleHeaders extends Omit<IMhcmsArticleHeaders, "date"> {
+    date: string
 }
 
 /** */
