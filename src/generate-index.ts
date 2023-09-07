@@ -5,7 +5,9 @@
  */
 
 import { exit } from "process"
-import { LocalFileAccess, MhcmsClient, S3FileAccess } from "."
+import { MhcmsClient } from "./client";
+import { LocalFileAccess } from "./file-access/local";
+import { S3FileAccess } from "./file-access/s3";
 
 /****** */
 main();

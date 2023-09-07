@@ -3,7 +3,7 @@ import { promises as fs } from "fs";
 import { IFileEntry, IMhcmsFileAccess } from "./types";
 import { ng, ok } from "../result";
 
-export default class LocalFileAccess implements IMhcmsFileAccess {
+export class LocalFileAccess implements IMhcmsFileAccess {
     constructor(private root: string) {
         /** */
     }

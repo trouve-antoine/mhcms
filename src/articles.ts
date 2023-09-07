@@ -97,16 +97,18 @@ export class MhcmsArticleContent {
             }
 
             if (line.startsWith(sectionStart)) {
-                yield new MhcmsArticleSection(
-                    currentSectionInfos.heading,
-                    new MhcmsArticleContent(currentSectionInfos.lines, this.sectionLevel + 1)
-                )
+                if (currentSectionInfos.lines.filter(x => x.trim().length !== 0).length > 0) {
+                    yield new MhcmsArticleSection(
+                        currentSectionInfos.heading,
+                        new MhcmsArticleContent(currentSectionInfos.lines, this.sectionLevel + 1)
+                    )
+                }
                 currentSectionInfos = { heading: line.substring(sectionStart.length).trim(), lines: [] };
             } else {
                 currentSectionInfos.lines.push(line);
             }
         }
-        if (currentSectionInfos.lines.length > 0) {
+        if (currentSectionInfos.lines.filter(x => x.trim().length !== 0).length > 0) {
             yield new MhcmsArticleSection(
                 currentSectionInfos.heading,
                 new MhcmsArticleContent(currentSectionInfos.lines, this.sectionLevel + 1)
@@ -125,7 +127,7 @@ export class MhcmsArticleContent {
             if (line.trim() === "") {
                 if (isCodeBlockParagraph) {
                     currentParagraph.push(line);
-                } else if (currentParagraph.length > 0) {
+                } else if (currentParagraph.filter(x => x.trim().length !== 0).length > 0) {
                     yield postProcessParagraphLines(currentParagraph, objectParsers);
                     currentParagraph = [];
                 }
@@ -140,7 +142,7 @@ export class MhcmsArticleContent {
                 currentParagraph.push(line);
             }
         }
-        if (currentParagraph.length > 0) {
+        if (currentParagraph.filter(x => x.trim().length !== 0).length > 0) {
             yield postProcessParagraphLines(currentParagraph, objectParsers);
         }
     }

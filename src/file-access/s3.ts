@@ -5,7 +5,7 @@ import * as S3 from "@aws-sdk/client-s3";
 
 import { IFileEntry, IMhcmsFileAccess } from "./types";
 
-export default class S3FileAccess implements IMhcmsFileAccess {
+export class S3FileAccess implements IMhcmsFileAccess {
     s3: S3.S3Client;
 
     constructor(private bucketName: string) {
