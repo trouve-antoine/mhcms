@@ -143,11 +143,14 @@ export class MhcmsFolder<S extends string | symbol> {
         if (_contents.isNg()) { return ng("Unable to access contents of text file", _contents); }
         const contents = _contents.value;
         
-        const res = getArticleContents(contents);
-        if (!res) {
-            return ng("Got no article contents from file: " + article.path);
+        const res = parseArticle(contents, article.date, article.shortTitle, article.path);
+        if (res.isNg()) {
+            return ng("Unable to parse article", res);
         }
-        return ok(new MhcmsArticle(article, res));
+
+        /** TODO: should we check if the parsed headers are the same as the ones in param? */
+
+        return ok(res.value);
     }
 }
 

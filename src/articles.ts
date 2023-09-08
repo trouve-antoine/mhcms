@@ -204,7 +204,7 @@ export function postProcessParagraphLines(
     return { type: "text", content: lines.join("\n") };
 }
 
-export function parseArticle<H>(
+export function parseArticle(
     content: string,
     date: Date,
     shortTitle: string,
