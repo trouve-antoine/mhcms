@@ -148,7 +148,9 @@ export class MhcmsFolder<S extends string | symbol> {
             return ng("Unable to parse article", res);
         }
 
-        /** TODO: should we check if the parsed headers are the same as the ones in param? */
+        if (!deepEqual(res.value.headers, article)) {
+            console.warn("The parsed headers are not the same as the ones in param: you should update your index.");
+        }
 
         return ok(res.value);
     }
@@ -296,4 +298,9 @@ function parseDate(yyyyMMdd: string): Result<Date, string> {
     } catch (e) {
         return ng("Cannot parse date: " + yyyyMMdd + ".");
     }
+}
+
+function deepEqual<T>(x: T, y: T) {
+    /** deep-equal lib is faster, but I prefer to avoid external dependencies */
+    return JSON.stringify(x) === JSON.stringify(y);
 }
