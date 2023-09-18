@@ -2,7 +2,7 @@ import * as yaml from "yaml";
 import { isLeft } from "fp-ts/lib/Either";
 import * as t from "io-ts";
 import { ok, ng, Result } from "./result";
-import { IMhcmsArticleHeaders, ISerializableMhcmsArticleHeaders } from "./folder-index";
+import { IMhcmsArticleHeaders, ISerializableMhcmsArticleHeaders, deserializeHeaders, serializeHeaders } from "./folder-index";
 
 const DEFAULT_OBJECT_PARSERS = {
     "yaml": yaml.parse,
@@ -14,13 +14,13 @@ export class MhcmsArticle {
 
     toJson(): ISerializableMhcmsArticle {
         return {
-            headers: { ...this.headers, date: this.headers.date.toISOString() },
+            headers: serializeHeaders(this.headers),
             lines: this.contents.lines
         }
     }
     static fromJson(json: ISerializableMhcmsArticle): MhcmsArticle {
         return new MhcmsArticle(
-            { ...json.headers, date: new Date(json.headers.date) },
+            deserializeHeaders(json.headers),
             new MhcmsArticleContent(json.lines)
         )
     }

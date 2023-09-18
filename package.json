@@ -44,10 +44,11 @@
   },
   "dependencies": {
     "io-ts": "^2.2.20",
+    "io-ts-reporters": "^2.0.1",
     "yaml": "^2.3.1"
   },
   "peerDependencies": {
-    "aws-crt": "^1.18.0",
-    "@aws-sdk/client-s3": "^3.388.0"
+    "@aws-sdk/client-s3": "^3.388.0",
+    "aws-crt": "^1.18.0"
   }
 }

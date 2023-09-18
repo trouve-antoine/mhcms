@@ -2,6 +2,7 @@ import * as yaml from 'yaml';
 import { isLeft } from 'fp-ts/lib/Either';
 import * as t from 'io-ts'
 import { Result, ok, ng } from './result';
+import reporter from "io-ts-reporters";
 
 export function parseIndexFile<H, S extends string | symbol>(
     contents: string,
@@ -26,11 +27,16 @@ export function parseIndexFile<H, S extends string | symbol>(
     })
 
     const _parsedContents = parseYaml(contents)
-    if (_parsedContents.isNg()) { return ng("Unable to parse existing index file", _parsedContents); }
+    if (_parsedContents.isNg()) { return ng("The index file is not a valid yaml", _parsedContents); }
     const parsedContents = _parsedContents.value;
 
     const _index = codec.decode(parsedContents);
-    if (isLeft(_index)) { return ng("Unable to parse existing index file"); }
+    if (isLeft(_index)) {
+        return ng(
+            "The index file is a valid yaml, but does not have the expected structure",
+            undefined, reporter.report(_index)
+        );
+    }
     const index = _index.right;
 
     for (let collectionName in index.collections) {
@@ -54,6 +60,18 @@ export interface IMhcmsFolderIndex<S extends string | symbol> {
     collections: Record<S, IMhcmsArticleHeaders[]>;
 }
 
+export interface ISerializableMhcmsArticleHeaders {
+    date: string
+    shortTitle: string
+    path: string
+    title: string
+    subTitle: string
+    tags: string[]
+    authors: string[]
+    /** */
+    customHeaders: Record<string, string>
+}
+
 export interface IMhcmsArticleHeaders {
     date: Date
     shortTitle: string
@@ -64,6 +82,14 @@ export interface IMhcmsArticleHeaders {
     authors: string[]
     /** */
     customHeaders: Record<string, string>
+}
+
+export function serializeHeaders(header: IMhcmsArticleHeaders): ISerializableMhcmsArticleHeaders {
+    return { ...header, date: header.date.toISOString() }
+}
+
+export function deserializeHeaders(header: ISerializableMhcmsArticleHeaders): IMhcmsArticleHeaders {
+    return { ...header, date: new Date(header.date) }
 }
 
 export interface ISerializableMhcmsArticleHeaders extends Omit<IMhcmsArticleHeaders, "date"> {

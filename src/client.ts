@@ -114,6 +114,9 @@ export class MhcmsFolder<S extends string | symbol> {
                 if (options.after && (post.date < options.after)) {
                     continue;
                 }
+                if (options.fileName && (path.basename(post.path) != (options.fileName + ".md"))) {
+                    continue;
+                }
                 if (options.tags && (options.tags.length > 0)) {
                     let hasAllTags = arrayHasAllEntries(options.tags, post.tags);
                     if (!hasAllTags) { continue; }
@@ -165,6 +168,7 @@ export interface IPostSearchOptions<S> {
     tags?: string[];
     authors?: string[];
     title?: string;
+    fileName?: string;
     sorting?: { key: "date", direction: "ascending" | "descending" };
 }
 
