@@ -142,7 +142,7 @@ export class MhcmsFolder<S extends string | symbol> {
     }
 
     async article(article: IMhcmsArticleHeaders): Promise<Result<MhcmsArticle, string>> {
-        const _contents = await this.fileAccess.readTextFile(article.path);
+        const _contents = await this.fileAccess.readTextFile(path.join(this.folder, article.path));
         if (_contents.isNg()) { return ng("Unable to access contents of text file", _contents); }
         const contents = _contents.value;
         

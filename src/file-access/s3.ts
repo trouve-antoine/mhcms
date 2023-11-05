@@ -8,8 +8,8 @@ import { IFileEntry, IMhcmsFileAccess } from "./types";
 export class S3FileAccess implements IMhcmsFileAccess {
     s3: S3.S3Client;
 
-    constructor(private bucketName: string) {
-        this.s3 = new S3.S3Client({ });
+    constructor(private bucketName: string, _s3: S3.S3Client | undefined = undefined) {
+        this.s3 = _s3 || new S3.S3Client({ });
     }
 
 

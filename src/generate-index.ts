@@ -8,6 +8,7 @@ import { exit } from "process"
 import { MhcmsClient } from "./client";
 import { LocalFileAccess } from "./file-access/local";
 import { S3FileAccess } from "./file-access/s3";
+import * as S3 from "@aws-sdk/client-s3";
 
 /****** */
 main();
