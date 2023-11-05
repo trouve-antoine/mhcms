@@ -213,7 +213,7 @@ async function readIndexFile<S extends string>(
 ): Promise<Result<IMhcmsFolderIndex<S>, string>> {
     try {
         const _indexFile = await fileAccess.readTextFile(path);
-        if (_indexFile.isNg()) { return ng("Unable to read index file.", _indexFile) }
+        if (_indexFile.isNg()) { return ng(`Unable to read index file at ${path}.`, _indexFile) }
         return parseIndexFile(_indexFile.value, collections);
     } catch (e) {
         return ng("Unable to access index file.");
